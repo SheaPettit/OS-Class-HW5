@@ -6,10 +6,10 @@ public class ScheduleStats {
   public ScheduleStats(String alg, long time, long lostTime, int numJobsCompleted, long[][] turnAround) {
     cpuAlg = alg;
     cpuUtilization = (((double) (time - lostTime)) * 100) / time;
-    averageThroughput = numJobsCompleted / ((double) time / 1000000000);
+    averageThroughput = numJobsCompleted / (((double) time) / 1000000000);
     double totalTurnaround = 0.0;
     for(int i = 0; i < numJobsCompleted; i++){
-      totalTurnaround += ((double) (turnAround[i][1] - turnAround[i][0]) / 1000000);
+      totalTurnaround += ((double) turnAround[i][1] - turnAround[i][0]) / 1000000;
     }
     averageTurnaround = totalTurnaround / numJobsCompleted;
   }
