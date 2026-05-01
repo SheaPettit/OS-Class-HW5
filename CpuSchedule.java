@@ -1,46 +1,77 @@
+import java.util.concurrent.locks.LockSupport;
 public class CpuSchedule{
-  public static ScheduleStats firstComeFirstServe(int[][] jobs, int runtimeMs) {
-    long runtimeNs = runtimeMs * 1000;
+  public static ScheduleStats firstComeFirstServe(long[][] jobs, int runtimeMs) {
+    System.out.println("Running FCFS for " + runtimeMs + "ms");
+    long runtimeNs = ((long) runtimeMs) * 1000000;
     int numJobs = jobs.length;
     int jobsCompleted = 0;
     int jobIndex = 0;
-    long[][] turnaround = new long[jobs.length][2];
-    int burstTime;
-    long arrivalTime;
-    long lostTime = 0;
+    long utilTime = 0;
+    long totalTurnaround = 0;
     long startingTime = System.nanoTime();
     long endTime = startingTime + runtimeNs;
-    burstTime = jobs[jobIndex][1];
-    arrivalTime = System.nanoTime();
-    turnaround[jobIndex][0] = arrivalTime;
-    lostTime += (System.nanoTime() - startingTime);
-    try {
-      Thread.sleep(burstTime);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    long startBurst = System.nanoTime();
+    long burstTime = startBurst + jobs[jobIndex][1];
+    while(burstTime > System.nanoTime()){}
     while(true) {
-      long completionTime = System.nanoTime();
-      if(completionTime > endTime) {
+      if(System.nanoTime() >= endTime) {
+        utilTime += (Math.min(endTime, burstTime) - startBurst);
         break;
       }
       jobsCompleted++;
-      turnaround[jobIndex++][1] = completionTime;
+      utilTime += (burstTime - startBurst);
+      totalTurnaround += (burstTime - (startingTime + jobs[jobIndex++][0]));
       long nextTime = startingTime + jobs[jobIndex][0];
-      while(true){
-        if(System.nanoTime() >= nextTime)
-          break;
-      }
-      burstTime = jobs[jobIndex][1];
-      arrivalTime = System.nanoTime();
-      turnaround[jobIndex][0] = arrivalTime;
-      lostTime += (System.nanoTime() - completionTime);
-      try {
-        Thread.sleep(burstTime);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      while(nextTime > System.nanoTime()){}
+      startBurst = System.nanoTime();
+      burstTime = startBurst + jobs[jobIndex][1];
+      while(burstTime > System.nanoTime()){}
     }
-    return new ScheduleStats("First come First serve",  (runtimeMs * 1000), lostTime, jobsCompleted, turnaround);
+    return new ScheduleStats("First come First serve",  runtimeNs, utilTime, totalTurnaround, jobsCompleted);
+  }
+  public static ScheduleStats shortestJobFirst(long[][] jobs, int runtimeMs) {
+    System.out.println("Running SJF for " + runtimeMs + "ms");
+    long runtimeNs = ((long) runtimeMs) * 1000000;
+    int numJobs = jobs.length;
+    int jobsCompleted = 0;
+    int jobIndex = 0;
+    long utilTime = 0;
+    long totalTurnaround = 0;
+    long startingTime = System.nanoTime();
+    long endTime = startingTime + runtimeNs;
+    long startBurst = System.nanoTime();
+    long burstTime = startBurst + jobs[jobIndex][1];
+    while(burstTime > System.nanoTime()){}
+    while(true) {
+      if(System.nanoTime() >= endTime) {
+        utilTime += (Math.min(endTime, burstTime) - startBurst);
+        break;
+      }
+      jobsCompleted++;
+      utilTime += (burstTime - startBurst);
+      totalTurnaround += (burstTime - (startingTime + jobs[jobIndex++][0]));
+      long timeOffset = System.nanoTime() - startingTime;
+      int swapIndex = jobIndex;
+      for(int i = jobIndex; i < jobs.length; i++) {
+        if(jobs[i][0] > timeOffset)
+          break;
+        if(jobs[i][1] < jobs[swapIndex][1])
+          swapIndex = i;
+      }
+      if(swapIndex != jobIndex){
+        long tempArrival = jobs[jobIndex][0];
+        long tempBurst = jobs[jobIndex][1];
+        jobs[jobIndex][0] = jobs[swapIndex][0];
+        jobs[jobIndex][1] = jobs[swapIndex][1];
+        jobs[swapIndex][0] = tempArrival;
+        jobs[swapIndex][1] = tempBurst;
+      }
+      long nextTime = startingTime + jobs[jobIndex][0];
+      while(nextTime > System.nanoTime()){}
+      startBurst = System.nanoTime();
+      burstTime = startBurst + jobs[jobIndex][1];
+      while(burstTime > System.nanoTime()){}
+    }
+    return new ScheduleStats("Shortest job first",  runtimeNs, utilTime, totalTurnaround, jobsCompleted);
   }
 }

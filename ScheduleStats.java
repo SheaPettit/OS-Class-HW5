@@ -1,21 +1,19 @@
 public class ScheduleStats {
   private String cpuAlg;
-  private double cpuUtilization;
+  private double cpuUtilizationPercent;
   private double averageThroughput;
   private double averageTurnaround;
-  public ScheduleStats(String alg, long time, long lostTime, int numJobsCompleted, long[][] turnAround) {
+  public ScheduleStats(String alg, long runTime, long utilTime, long totalTurnaround, int numJobsCompleted) {
+    if(numJobsCompleted == 0)
+      throw new IllegalArgumentException();
     cpuAlg = alg;
-    cpuUtilization = (((double) (time - lostTime)) * 100) / time;
-    averageThroughput = numJobsCompleted / (((double) time) / 1000000000);
-    double totalTurnaround = 0.0;
-    for(int i = 0; i < numJobsCompleted; i++){
-      totalTurnaround += ((double) turnAround[i][1] - turnAround[i][0]) / 1000000;
-    }
-    averageTurnaround = totalTurnaround / numJobsCompleted;
+    cpuUtilizationPercent = (((double) utilTime / (double) runTime) * 100.0);
+    averageThroughput = ((double) numJobsCompleted / ((double) runTime / 1000000000.0));
+    averageTurnaround = (((double) totalTurnaround / 1000000.0) / (double) numJobsCompleted);
   }
   public void printStats() {
     System.out.println("Algorithm " + cpuAlg + " Statistics:");
-    System.out.println("Cpu Utilization: " + cpuUtilization + "% of the time");
+    System.out.println("Cpu Utilization: " + cpuUtilizationPercent + "% of the time");
     System.out.println("Average Job Throughput: " + averageThroughput + " per second");
     System.out.println("Average Job Turnaround: " + averageTurnaround + " ms");
   }
